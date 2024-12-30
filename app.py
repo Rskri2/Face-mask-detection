@@ -1,37 +1,38 @@
-from flask import Flask,jsonify, render_template, request
+from flask import Flask, render_template, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from model import prepare_image, predict_output
+from helper import prepare_image, predict_output
 
 app = Flask(__name__)
 CORS(app)
-@app.route("/")
 
-def predict(filename):
+def predict_val(filename):
     img = prepare_image('images/'+filename)
     output = predict_output(img)
     return output
-    
+
+@app.route("/")
 def welcome():
     return render_template("index.html")
 
 @app.route('/submit', methods = ["POST"])
 def submit():
     if 'file' not in request.files:
-        return jsonify({"message":"File not uploaded"}), 400
+        return "File not uploaded"
     
     file = request.files["file"]
     if file.filename == ' ':
-        return jsonify({"message":"File not uploaded"}), 400
+        return "File not uploaded"
     filename = secure_filename(file.filename)
     file.save('images/'+filename)
     
-    output = predict(filename)
+    output = predict_val(filename)
     
     if output >= 0.5:
-        return jsonify({"message":"Not wearing the mask"}), 201
+        return render_template('mask.html', Mask = "Not Wearing mask")
     else :
-        return jsonify({"message":"Wearing the mask"}), 201
+        return render_template('mask.html', Mask = "Wearing Mask")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
